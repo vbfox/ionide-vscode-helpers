@@ -12,8 +12,6 @@ module JS =
 //PromisesExt (by Dave)
 //---------------------------------------------------
 module Promise =
-    open System
-    open Fable.Core
     open Fable.Import
     open Fable.Import.JS
 
@@ -98,10 +96,10 @@ module Promise =
     let empty<'T> = lift (unbox<'T>null)
 
     type PromiseBuilder() =
-        member inline x.Bind(m,f) = bind f m
-        member inline x.Return(a) = lift a
-        member inline x.ReturnFrom(a) = a
-        member inline x.Zero() = Fable.Import.JS.Promise.resolve()
+        member inline __.Bind(m,f) = bind f m
+        member inline __.Return(a) = lift a
+        member inline __.ReturnFrom(a) = a
+        member inline __.Zero() = Fable.Import.JS.Promise.resolve()
 
 [<AutoOpen>]
 module PromiseBuilderImp =
@@ -146,7 +144,6 @@ module Process =
 
     open Fable.Import.JS
     open Fable.Import.Node
-    open Fable.Import.Node.Exports
     open Fable.Import.Node.ChildProcess
     open Fable.Import.vscode
     open Fable.Core.JsInterop
@@ -181,24 +178,23 @@ module Process =
                 "cwd" ==> workspace.rootPath
             ]
         if isWin () || linuxCmd = "" then
-            ChildProcess.spawn(location, cmd', options)
+            childProcess.spawn(location, cmd', options)
         else
             let prms = seq { yield location; yield! cmd'} |> ResizeArray
-            ChildProcess.spawn(linuxCmd, prms, options)
+            childProcess.spawn(linuxCmd, prms, options)
 
     let spawnInDir location linuxCmd (cmd : string) =
         let cmd' = splitArgs cmd |> ResizeArray
 
         let options =
             createObj [
-                "cwd" ==> (Path.dirname location)
+                "cwd" ==> (path.dirname location)
             ]
         if isWin () || linuxCmd = "" then
-
-            ChildProcess.spawn(location, cmd', options)
+            childProcess.spawn(location, cmd', options)
         else
             let prms = seq { yield location; yield! cmd'} |> ResizeArray
-            ChildProcess.spawn(linuxCmd, prms, options)
+            childProcess.spawn(linuxCmd, prms, options)
 
     let spawnWithShell location linuxCmd (cmd : string) =
         let cmd' = splitArgs cmd |> ResizeArray
@@ -211,12 +207,10 @@ module Process =
 
             ]
         if isWin () || linuxCmd = "" then
-
-            ChildProcess.spawn(location, cmd', options)
+            childProcess.spawn(location, cmd', options)
         else
             let prms = seq { yield location; yield! cmd'} |> ResizeArray
-            ChildProcess.spawn(linuxCmd, prms, options)
-
+            childProcess.spawn(linuxCmd, prms, options)
 
     let spawnWithNotification location linuxCmd (cmd : string) (outputChannel : OutputChannel) =
         spawn location linuxCmd cmd
@@ -250,7 +244,7 @@ module Process =
             let execCmd =
                 if isWin () then location + " " + cmd
                 else linuxCmd + " " + location + " " + cmd
-            ChildProcess.exec(execCmd, options,
+            childProcess.exec(execCmd, options,
                 (fun (e : ExecError option) (i : U2<string, Buffer.Buffer>) (o : U2<string, Buffer.Buffer>) ->
                     // As we don't specify an encoding, the documentation specifies that we'll receive strings
                     // "By default, Node.js will decode the output as UTF-8 and pass strings to the callback"
@@ -264,7 +258,6 @@ module Process =
 module Settings =
     open Fable.Import.vscode
     open Fable.Import.Node
-    open Fable.Import.Node.Exports
 
     module Toml =
         [<Emit("toml.parse($0)")>]
@@ -298,7 +291,7 @@ module Settings =
     let loadOrDefault<'a> (map : Settings -> 'a)  (def :'a) =
         try
             let path = workspace.rootPath + "/.ionide"
-            let t = Fs.readFileSync(path).toString ()
+            let t = fs.readFileSync(path).toString ()
                     |> Toml.parse
                     |> map
             if JS.isDefined t then t else def
